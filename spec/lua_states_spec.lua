@@ -7,27 +7,29 @@ package.path = './dmc_lua/?.lua;' .. package.path
 
 
 --====================================================================--
--- Test: Lua States
+--== Test: Lua States
 --====================================================================--
+
 
 -- Semantic Versioning Specification: http://semver.org/
 
 local VERSION = "0.1.0"
 
 
---====================================================================--
--- Imports
-
-local StatesMix = require 'lua_states'
-
-
 
 --====================================================================--
--- Testing Setup
+--== Imports
+
+local StatesMix = require 'lua_states_mix'
+
+
+
+--====================================================================--
+--== Testing Setup
 --====================================================================--
 
 
-describe( "Module Test: lua_states.lua", function()
+describe( "Module Test: lua_states_mix.lua", function()
 
 	local object
 
@@ -42,7 +44,7 @@ describe( "Module Test: lua_states.lua", function()
 		--== States Setup ==--
 
 		object = {}
-		StatesMix.mixin( object )
+		StatesMix.patch( object )
 
 		--== State Constants
 
