@@ -99,6 +99,7 @@ end
 
 States = {}
 
+States.NAME = "States Mixin"
 
 --======================================================--
 -- Start: Mixin Setup for Lua Objects
