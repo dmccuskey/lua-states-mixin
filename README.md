@@ -39,19 +39,23 @@ NetStream = newClass( { ObjectBase, StatesMix } )
 -- Then call init method in your OO Framework construction phase
 
 -- with dmc-objects
-	self:superCall( StatesMix, '__init__', params )
+self:superCall( ObjectBase, '__init__', params )
+self:superCall( StatesMix, '__init__', params )
 
 -- with other frameworks
-	StatesMix.__init__( self, ... )
+ObjectBase.__init__( self, ... )
+StatesMix.__init__( self, ... )
 
 
 -- When destroying, you can call __undoInit__
 
 -- with dmc-objects
-	self:superCall( StatesMix, '__undoInit__' )
+self:superCall( ObjectBase, '__undoInit__' )
+self:superCall( StatesMix, '__undoInit__' )
 
 -- with other frameworks
-	StatesMix.__undoInit__( self )
+ObjectBase.__undoInit__( self )
+StatesMix.__undoInit__( self )
 
 ```
 
