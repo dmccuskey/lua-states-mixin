@@ -34,7 +34,7 @@ local StatesMixModule = require 'dmc_lua.lua_states_mix'
 local StatesMix = StatesMixModule.StatesMix
 
 -- do multiple inheritance !
-NetStream = newClass( { ObjectBase, StatesMix }, { name="DMC NetStream" } )
+NetStream = newClass( { ObjectBase, StatesMix } )
 
 -- Then call init method in your OO Framework construction phase
 
