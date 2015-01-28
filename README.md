@@ -37,23 +37,11 @@ local StatesMix = StatesMixModule.StatesMix
 NetStream = newClass( { ObjectBase, StatesMix } )
 
 -- Then call init method in your OO Framework construction phase
-
--- with dmc-objects
-self:superCall( ObjectBase, '__init__', params )
-self:superCall( StatesMix, '__init__', params )
-
--- with other frameworks
 ObjectBase.__init__( self, ... )
 StatesMix.__init__( self, ... )
 
 
 -- When destroying, you can call __undoInit__
-
--- with dmc-objects
-self:superCall( ObjectBase, '__undoInit__' )
-self:superCall( StatesMix, '__undoInit__' )
-
--- with other frameworks
 ObjectBase.__undoInit__( self )
 StatesMix.__undoInit__( self )
 
@@ -84,9 +72,6 @@ obj = StatesMix.patch( obj ) -- returns object
 -- or have patch() create one for you
 
 local obj = StatesMix.patch()  -- returns a new object
-
-
-
 
 ```
 
