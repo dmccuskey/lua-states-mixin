@@ -110,7 +110,7 @@ A state is a method of the object, named after the state. `setState( name )` mak
 
 `gotoState( name, ... )` asks the current state to move: it calls the current state's method as `obj:<current>( name, ... )`. That method decides. To accept, it calls `setState( name )`, directly or through a helper that does the work of the move first; to refuse, it does nothing or raises an error. The DMC libraries use the second pattern, with a `do_<state>()` method per state that sets up the state and ends with `setState()`.
 
-Before calling the current state, `gotoState()` pushes the current state's name onto a stack. `getPreviousState()` returns the top of the stack, and `gotoPreviousState( ... )` pops it and asks the current state to move there, as `gotoState()` does.
+A stack keeps the states the object has left. When the current state accepts a move from `gotoState()`, its `setState()` pushes the state being left onto the stack; a refused move, by doing nothing or by an error, leaves the stack as it was. `getPreviousState()` returns the top of the stack, and `gotoPreviousState( ... )` asks the current state to move there, as `gotoState()` does; if the move is accepted, `setState()` pops it. A `setState()` called on its own, outside a move, doesn't change the stack. The stack has no limit unless you set one with `setStateStackLimit( n )` (or `stack_limit` in `resetStates()`'s params): then it keeps the `n` newest names and drops the oldest.
 
 ## Reference
 
@@ -119,7 +119,8 @@ Before calling the current state, `gotoState()` pushes the current state's name 
 | member | is |
 |---|---|
 | `patch( [obj] )` | Adds the state properties and methods to `obj` (or a new table) and returns it. |
-| `StatesMix` | The mixin: a table of the methods, to use as a parent class (below). |
+| `StatesMix` | The mixin: a table of the methods, to use as a parent class (below). It also holds `patch`. |
+| `__version` | The module's version, `'1.4.0'`. |
 
 ### Methods
 
@@ -127,19 +128,20 @@ On a patched object, or an instance of a class that mixes in `StatesMix`:
 
 | method | does |
 |---|---|
-| `setState( name )` | Makes the method `name` the current state. Errors if `name` isn't a string or the object has no method by that name. |
+| `setState( name )` | Makes the method `name` the current state and, inside a move, updates the stack. Errors if `name` isn't a string or the object has no method by that name. |
 | `getState()` | Returns the current state's name, `''` before the first `setState()`. |
-| `gotoState( name, ... )` | Pushes the current state onto the stack and calls the current state's method with `( name, ... )`. Errors if no state is set. |
+| `gotoState( name, ... )` | Calls the current state's method with `( name, ... )`; if it accepts, the state it leaves goes onto the stack. Errors if no state is set. |
 | `getPreviousState()` | Returns the top of the stack. Errors if it's empty. |
-| `gotoPreviousState( ... )` | Pops the top of the stack and calls the current state's method with `( popped, ... )`. Errors if the stack is empty. |
+| `gotoPreviousState( ... )` | Calls the current state's method with `( top, ... )`, where `top` is the top of the stack; if it accepts, the top is popped. Errors if the stack is empty. |
 | `pushStateStack( name )` | Pushes a name onto the stack, so `gotoPreviousState()` goes there next. |
 | `popStateStack()` | Removes and returns the top of the stack. Errors if it's empty. |
-| `resetStates( [params] )` | Clears the current state and the stack. `params.debug_on` sets the debug flag (default `false`). |
+| `resetStates( [params] )` | Clears the current state and the stack. `params.debug_on` sets the debug flag (default `false`), `params.stack_limit` the stack limit (default none). |
+| `setStateStackLimit( n )` | Keeps at most `n` names on the stack (a whole number from 1), dropping the oldest, now and on each push; `nil` removes the limit. |
 | `setDebug( bool )` | With `true`, prints each move as `Lua States (debug) :: ...`. |
 
 ### As a Mixin
 
-`StatesMix` holds the methods; its `__init__( self, params )` and `__undoInit__( self )` both call `resetStates()`. With lua-objects (lua-class), mix it in with multiple inheritance:
+`StatesMix` holds the methods; its `__init__( self, params )` calls `resetStates( params )`, and `__undoInit__( self )` removes the state properties. With lua-objects (lua-class), mix it in with multiple inheritance:
 
 ```lua
 local NetStream = newClass( { ObjectBase, StatesMix } )
@@ -165,12 +167,9 @@ StatesMix.__init__( obj )
 
 ## Known Issues
 
-- **A refused move leaves the stack wrong**: `gotoState()` pushes the current state before asking it, so a state that refuses (or errors) leaves its own name on top, and `gotoPreviousState()` then asks it to move to itself. Likewise, a refused `gotoPreviousState()` has already popped the name.
-- **It leaks globals** `_patch`, `outStr` and `errStr`, and replaces any globals by those names.
-- The old README called `StatesMix.patch( obj )`; `patch` is on the module (`StatesMixModule.patch`), not on `StatesMix`.
-- The stack has no limit: every `gotoState()` adds an entry, and only `gotoPreviousState()` and `popStateStack()` remove one.
-- `__undoInit__()` resets the states rather than removing them.
-- The version, `1.3.1`, isn't exported: it's a local in the file.
+- If a state method raises an error during a move and the object then calls `setState()` directly, before any other move or `resetStates()`, that `setState()` still pushes the state the failed move started from.
+
+Version 1.4.0 fixed those of 1.3.1: a refused or failed move left the stack wrong (`gotoState()` pushed before asking, `gotoPreviousState()` popped before asking); the module leaked the globals `_patch`, `outStr` and `errStr`; `StatesMix.patch( obj )`, from the old README, didn't exist; `__undoInit__()` reset the states rather than removing them; the version wasn't exported; the stack had no limit (now optional, `setStateStackLimit()`).
 
 ## Development
 
@@ -185,10 +184,10 @@ busted spec
 It ends with:
 
 ```text
-17 successes / 0 failures / 0 errors / 0 pending : 0.003027 seconds
+34 successes / 0 failures / 0 errors / 0 pending : 0.003027 seconds
 ```
 
-(The debug test prints a few `Lua States (debug)` lines.) The tests cover every method through `patch()`, not the mixin.
+(The debug test prints a few `Lua States (debug)` lines.) The tests cover every method through `patch()`; of the mixin, only `__init__()` and `__undoInit__()`.
 
 ## License
 
